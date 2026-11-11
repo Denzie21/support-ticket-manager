@@ -1,112 +1,78 @@
 
-interface SupportTicket {
+interface Customer {
   id: number;
-  customerName: string;
-  issue: string;
-  status: "Open" | "Pending" | "Resolved";
-  priority: "Low" | "Medium" | "High";
+  name: string;
+  username: string;
+  email: string;
+  phone: string;
+  website: string;
 }
 
-// Store multiple support tickets
-const tickets: SupportTicket[] = [
-  {
-    id: 101,
-    customerName: "Dennis",
-    issue: "Unable to log in",
-    status: "Open",
-    priority: "High"
-  },
-  {
-    id: 102,
-    customerName: "Michael",
-    issue: "Payment not processing",
-    status: "Pending",
-    priority: "Medium"
-  },
-  {
-    id: 103,
-    customerName: "Sarah",
-    issue: "Password reset request",
-    status: "Resolved",
-    priority: "Low"
-  },
-  {
-    id: 104,
-    customerName: "John",
-    issue: "Application keeps crashing",
-    status: "Open",
-    priority: "High"
-  },
-  {
-    id: 105,
-    customerName: "Anna",
-    issue: "Internet connection problem",
-    status: "Pending",
-    priority: "High",
+async function getAllCustomers(): Promise<void> {
+
+  try {
+
+    console.log("Retrieving all customers...");
+
+    const response = await fetch(
+      "https://jsonplaceholder.typicode.com/users"
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `HTTP Error: ${response.status}`
+      );
+    }
+
+    const customers: Customer[] = await response.json();
+
+    console.log("Total Customers:", customers.length);
+
+    console.log("\n===== CUSTOMER DIRECTORY =====");
+
+    customers.forEach((customer) => {
+
+      console.log("----------------------------");
+
+      console.log("Customer ID:", customer.id);
+      console.log("Name:", customer.name);
+      console.log("Email:", customer.email);
+
+
+    });
+
+  } catch (error: unknown) {
+
+    if (error instanceof Error) {
+      console.error("API Error:", error.message);
+    } else {
+      console.error("An unexpected error occurred.");
+    }
+
   }
 
-];
-
-// Display all tickets
-function displayTickets(ticketList: SupportTicket[]): void {
-  console.log("\n===== CUSTOMER SUPPORT TICKETS =====");
-
-  ticketList.forEach((ticket) => {
-    console.log("-------------------------");
-    console.log("Ticket ID:", ticket.id);
-    console.log("Customer:", ticket.customerName);
-    console.log("Issue:", ticket.issue);
-    console.log("Status:", ticket.status);
-    console.log("Priority:", ticket.priority);
-  });
 }
+getAllCustomers();
 
-// Find a ticket using its ID
-function findTicket(id: number): SupportTicket | undefined {
-  return tickets.find((ticket) => ticket.id === id);
+async function getCustomerById(id: number): Promise<void> {
+  try {
+    const response = await fetch(
+      `https://jsonplaceholder.typicode.com/users/${id}`
+    );
+
+    if (!response.ok) {
+      throw new Error(`Customer not found: ${response.status}`);
+    }
+
+    const customer: Customer = await response.json();
+
+    console.log("Customer Found:", customer.name);
+    console.log("Email:", customer.email);
+
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error(error.message);
+    }
+  }
 }
-
-// Filter tickets by status
-function filterTickets(
-  status: SupportTicket["status"]
-): SupportTicket[] {
-  return tickets.filter((ticket) => ticket.status === status);
-}
-
-// Count tickets using a reusable generic function
-function countItems<T>(items: T[]): number {
-  return items.length;
-}
-// Finds high priority tickets
-function findHighPriorityTickets(): SupportTicket[] {
-  return tickets.filter((ticket) => ticket.priority === "High");
-}
-// Finds tickets by customer name
-function findTicketsByCustomerName(customerName: string): SupportTicket[] {
-  return tickets.filter((ticket) => ticket.customerName === customerName);
-}
-// Create a generic function named that returns the last item from an array of any type
-function getLastItem<T>(items: T[]): T | undefined {
-  return items[items.length - 1];
-}
-
-// Display results
-displayTickets(tickets);
-
-console.log("\n===== SEARCH RESULT =====");
-console.log(findTicket(102));
-
-console.log("\n===== OPEN TICKETS =====");
-console.log(filterTickets("Open"));
-
-console.log("\n===== TOTAL TICKETS =====");
-console.log(countItems(tickets));
-
-console.log("\n===== HIGH PRIORITY TICKETS =====");
-console.log(findHighPriorityTickets());
-
-console.log("\n===== TICKETS BY CUSTOMER NAME =====");
-console.log(findTicketsByCustomerName("Michael"));
-
-console.log("\n===== LAST TICKET =====");
-console.log(getLastItem(tickets));
+getCustomerById(3);
