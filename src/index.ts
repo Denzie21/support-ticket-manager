@@ -6,73 +6,134 @@ interface Customer {
   email: string;
   phone: string;
   website: string;
+  company: {
+    name: string;
+  };
 }
 
-async function getAllCustomers(): Promise<void> {
+// STEP 1: Retrieve all customers
+async function getAllCustomers(): Promise<Customer[]> {
+  const response = await fetch(
+    "https://jsonplaceholder.typicode.com/users"
+  );
 
-  try {
-
-    console.log("Retrieving all customers...");
-
-    const response = await fetch(
-      "https://jsonplaceholder.typicode.com/users"
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        `HTTP Error: ${response.status}`
-      );
-    }
-
-    const customers: Customer[] = await response.json();
-
-    console.log("Total Customers:", customers.length);
-
-    console.log("\n===== CUSTOMER DIRECTORY =====");
-
-    customers.forEach((customer) => {
-
-      console.log("----------------------------");
-
-      console.log("Customer ID:", customer.id);
-      console.log("Name:", customer.name);
-      console.log("Email:", customer.email);
-
-
-    });
-
-  } catch (error: unknown) {
-
-    if (error instanceof Error) {
-      console.error("API Error:", error.message);
-    } else {
-      console.error("An unexpected error occurred.");
-    }
-
+  if (!response.ok) {
+    throw new Error(`HTTP Error: ${response.status}`);
   }
 
+  const customers: Customer[] = await response.json();
+
+  return customers;
 }
-getAllCustomers();
 
-async function getCustomerById(id: number): Promise<void> {
-  try {
-    const response = await fetch(
-      `https://jsonplaceholder.typicode.com/users/${id}`
-    );
+// STEP 2: Search customers by name, username, or email
+function searchCustomers(
+  customers: Customer[],
+  searchTerm: string
+): Customer[] {
 
-    if (!response.ok) {
-      throw new Error(`Customer not found: ${response.status}`);
-    }
+  const term = searchTerm.trim().toLowerCase();
 
-    const customer: Customer = await response.json();
+  if (!term) {
+    return customers;
+  }
 
-    console.log("Customer Found:", customer.name);
+  return customers.filter((customer) =>
+    customer.name.toLowerCase().includes(term) ||
+    customer.username.toLowerCase().includes(term) ||
+    customer.email.toLowerCase().includes(term)
+  );
+}
+
+// STEP 3: Filter customers by company
+function filterByCompany(
+  customers: Customer[],
+  companyName: string
+): Customer[] {
+
+  return customers.filter(
+    (customer) =>
+      customer.company.name.toLowerCase() ===
+      companyName.trim().toLowerCase()
+  );
+}
+
+// STEP 4: Sort customers alphabetically
+function sortCustomersByName(
+  customers: Customer[]
+): Customer[] {
+
+  return [...customers].sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
+}
+
+// STEP 5: Display customer information
+function displayCustomers(
+  customers: Customer[]
+): void {
+
+  if (customers.length === 0) {
+    console.log("No matching customers found.");
+    return;
+  }
+
+  customers.forEach((customer) => {
+    console.log("--------------------------");
+    console.log("ID:", customer.id);
+    console.log("Name:", customer.name);
     console.log("Email:", customer.email);
+    console.log("Company:", customer.company.name);
+  });
+}
+
+// STEP 6: Execute the application
+async function main(): Promise<void> {
+
+  try {
+
+    console.log("Connecting to customer API...");
+
+    const customers = await getAllCustomers();
+
+    console.log("\nTotal customers:", customers.length);
+
+    // Search example
+    console.log("\n===== SEARCH CUSTOMERS =====");
+
+    const searchResults = searchCustomers(
+      customers,
+      "leanne"
+    );
+
+    displayCustomers(searchResults);
+
+    // Company filter example
+    console.log("\n===== FILTER BY COMPANY =====");
+
+    const companyResults = filterByCompany(
+      customers,
+      "Romaguera-Crona"
+    );
+
+    displayCustomers(companyResults);
+
+    // Sort example
+    console.log("\n===== SORT CUSTOMERS A-Z =====");
+
+    const sortedCustomers = sortCustomersByName(customers);
+
+    displayCustomers(sortedCustomers);
 
   } catch (error: unknown) {
+
     if (error instanceof Error) {
-      console.error(error.message);
+      console.error("Application Error:", error.message);
+    } else {
+      console.error("Unexpected error occurred.");
     }
+
   }
 }
-getCustomerById(3);
+
+main();

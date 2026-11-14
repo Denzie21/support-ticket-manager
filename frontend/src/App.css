@@ -1,0 +1,81 @@
+
+#root {
+  min-height: 100vh;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f4f6fb;
+  color: #1e293b;
+}
+
+.app {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+.page-header {
+  margin-bottom: 30px;
+}
+
+.eyebrow {
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.page-header h1 {
+  margin-bottom: 8px;
+}
+
+.customer-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.customer-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-weight: bold;
+}
+
+.customer-info h2 {
+  font-size: 17px;
+  margin: 0 0 6px;
+}
+
+.customer-info p {
+  font-size: 13px;
+  margin: 5px 0;
+  color: #64748b;
+}
+
+.company {
+  font-weight: bold;
+}
+
+.result-count {
+  margin-top: 24px;
+  font-size: 14px;
+  color: #64748b;
+}
