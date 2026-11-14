@@ -1,9 +1,9 @@
 
+import { useState } from "react";
 import { CustomerCard } from "./components/CustomerCard";
 import type { Customer } from "./types";
 import "./App.css";
 
-// Sample customer data
 const customers: Customer[] = [
   {
     id: 1,
@@ -25,8 +25,24 @@ const customers: Customer[] = [
   }
 ];
 
-// Main React component
 function App() {
+  // Store the user's search input
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Filter customers based on name or email
+  const filteredCustomers = customers.filter((customer) => {
+    const search = searchTerm.toLowerCase();
+
+    return (
+      customer.name.toLowerCase().includes(search) ||
+      customer.email.toLowerCase().includes(search)
+    );
+  });
+
+  // Clear the search field
+  function handleClearSearch() {
+    setSearchTerm("");
+  }
 
   return (
     <main className="app">
@@ -43,19 +59,36 @@ function App() {
         </p>
       </header>
 
+      <section className="search-section">
+        <input
+          type="text"
+          placeholder="Search customer name or email..."
+          value={searchTerm}
+          onChange={(event) =>
+            setSearchTerm(event.target.value)
+          }
+        />
+
+        <button onClick={handleClearSearch}>
+          Clear Search
+        </button>
+      </section>
+
       <section className="customer-grid">
-
-        {customers.map((customer) => (
-          <CustomerCard
-            key={customer.id}
-            customer={customer}
-          />
-        ))}
-
+        {filteredCustomers.length > 0 ? (
+          filteredCustomers.map((customer) => (
+            <CustomerCard
+              key={customer.id}
+              customer={customer}
+            />
+          ))
+        ) : (
+          <p>No customers found.</p>
+        )}
       </section>
 
       <p className="result-count">
-        Showing {customers.length} customers
+        Showing {filteredCustomers.length} of {customers.length} customers
       </p>
 
     </main>
