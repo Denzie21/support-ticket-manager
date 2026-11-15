@@ -1,9 +1,9 @@
-
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
 import { CustomerCard } from "./components/CustomerCard";
 import type { Customer, ApiUser } from "./types";
+import { CustomerDetails } from "./components/CustomerDetails";
 
 import "./App.css";
 
@@ -30,6 +30,14 @@ function App() {
     email: "",
     company: ""
   });
+  const [selectedCustomer, setSelectedCustomer] =
+    useState<Customer | null>(null);
+
+  const [detailsLoading, setDetailsLoading] =
+    useState(false);
+
+  const [detailsError, setDetailsError] =
+    useState("");
 
   // Fetch customers from API
   useEffect(() => {
@@ -72,7 +80,43 @@ function App() {
     fetchCustomers();
   }, []);
 
-  // Add a new customer
+  // Retrieve individual customer details from API
+  async function handleViewDetails(customerId: number) {
+    try {
+      setDetailsLoading(true);
+      setDetailsError("");
+      setSelectedCustomer(null);
+
+      const response = await fetch(
+        `https://jsonplaceholder.typicode.com/users/${customerId}`
+      );
+
+      if (!response.ok) {
+        throw new Error("Customer details could not be retrieved.");
+      }
+
+      const user: ApiUser = await response.json();
+
+      const customer: Customer = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        company: user.company.name
+      };
+
+      setSelectedCustomer(customer);
+
+    } catch (err) {
+      setDetailsError(
+        err instanceof Error
+          ? err.message
+          : "An unexpected error occurred."
+      );
+    } finally {
+      setDetailsLoading(false);
+    }
+  }
+  // Add a new customer to React state
   function handleAddCustomer(
     event: FormEvent<HTMLFormElement>
   ) {
@@ -231,10 +275,13 @@ function App() {
           <p className="error-message">{error}</p>
         ) : filteredCustomers.length > 0 ? (
           filteredCustomers.map((customer) => (
+
             <CustomerCard
               key={customer.id}
               customer={customer}
+              onViewDetails={handleViewDetails}
             />
+
           ))
         ) : (
           <p>No customers found.</p>
@@ -242,11 +289,24 @@ function App() {
 
       </section>
 
+      {detailsLoading && (
+  <p>Loading customer details...</p>
+)}
+
+{detailsError && (
+  <p className="error-message">{detailsError}</p>
+)}
+
+{selectedCustomer && (
+  <CustomerDetails customer={selectedCustomer} />
+)}
+
       {!loading && !error && (
         <p className="result-count">
           Showing {filteredCustomers.length} of {customers.length} customers
         </p>
       )}
+      
 
     </main>
   );

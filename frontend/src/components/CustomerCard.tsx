@@ -3,10 +3,12 @@ import type { Customer } from "../types";
 
 interface CustomerCardProps {
   customer: Customer;
+  onViewDetails: (customerId: number) => void;
 }
 
 export function CustomerCard({
-  customer
+  customer,
+  onViewDetails
 }: CustomerCardProps) {
   return (
     <article className="customer-card">
@@ -16,10 +18,18 @@ export function CustomerCard({
 
       <div className="customer-info">
         <h2>{customer.name}</h2>
+
         <p>{customer.email}</p>
+
         <p className="company">
           Company: {customer.company}
         </p>
+
+        <button
+          onClick={() => onViewDetails(customer.id)}
+        >
+          View Details
+        </button>
       </div>
     </article>
   );
