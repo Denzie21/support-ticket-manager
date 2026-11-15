@@ -29,21 +29,32 @@ function App() {
   // Store the user's search input
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Store the selected company filter
+  const [selectedCompany, setSelectedCompany] =
+    useState("All Companies");
+
   // Filter customers based on name or email
+
   const filteredCustomers = customers.filter((customer) => {
     const search = searchTerm.toLowerCase();
 
-    return (
+    const matchesSearch =
       customer.name.toLowerCase().includes(search) ||
-      customer.email.toLowerCase().includes(search)
-    );
+      customer.email.toLowerCase().includes(search);
+
+    const matchesCompany =
+      selectedCompany === "All Companies" ||
+      customer.company === selectedCompany;
+
+    return matchesSearch && matchesCompany;
   });
 
-  // Clear the search field
-  function handleClearSearch() {
-    setSearchTerm("");
-  }
 
+  // Clear the search field
+  function handleClearFilters() {
+    setSearchTerm("");
+    setSelectedCompany("All Companies");
+  }
   return (
     <main className="app">
 
@@ -69,8 +80,18 @@ function App() {
           }
         />
 
-        <button onClick={handleClearSearch}>
-          Clear Search
+        <select
+          value={selectedCompany}
+          onChange={(event) => setSelectedCompany(event.target.value)}
+        >
+          <option value="All Companies">All Companies</option>
+          <option value="Romaguera-Crona">Romaguera-Crona</option>
+          <option value="Deckow-Crist">Deckow-Crist</option>
+          <option value="Romaguera-Jacobson">Romaguera-Jacobson</option>
+        </select>
+
+        <button onClick={handleClearFilters}>
+          Clear Filters
         </button>
       </section>
 
