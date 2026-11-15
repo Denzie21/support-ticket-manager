@@ -2,10 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.customerRouter = void 0;
 const express_1 = require("express");
-const customers_1 = require("../data/customers");
+const db_1 = require("../config/db");
 exports.customerRouter = (0, express_1.Router)();
-// POST: Create a new customer
-exports.customerRouter.post("/", (req, res) => {
+// POST: Create a new customer using MySQL
+exports.customerRouter.post("/", async (req, res) => {
     const { name, email, company } = req.body;
     // Validate required fields
     if (typeof name !== "string" ||
@@ -19,7 +19,7 @@ exports.customerRouter.post("/", (req, res) => {
             message: "Name, email, and company are required."
         });
     }
-    // Basic email format validation
+    // Validate email format
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailPattern.test(email.trim())) {
         return res.status(400).json({
@@ -27,50 +27,99 @@ exports.customerRouter.post("/", (req, res) => {
             message: "Please provide a valid email address."
         });
     }
-    // Generate the next customer ID
-    const newId = Math.max(0, ...customers_1.customers.map((customer) => customer.id)) + 1;
-    // Create the customer record
-    const newCustomer = {
-        id: newId,
-        name: name.trim(),
-        email: email.trim(),
-        company: company.trim()
-    };
-    // Store the new customer in the array
-    customers_1.customers.push(newCustomer);
-    // Return the created customer
-    return res.status(201).json({
-        status: "success",
-        message: "Customer created successfully.",
-        data: newCustomer
-    });
+    try {
+        // Insert customer into MySQL
+        const [result] = await db_1.pool.execute(`INSERT INTO customers (name, email, company)
+       VALUES (?, ?, ?)`, [
+            name.trim(),
+            email.trim(),
+            company.trim()
+        ]);
+        // Construct the newly created customer
+        const newCustomer = {
+            id: result.insertId,
+            name: name.trim(),
+            email: email.trim(),
+            company: company.trim()
+        };
+        // Return successful response
+        return res.status(201).json({
+            status: "success",
+            message: "Customer created successfully.",
+            data: newCustomer
+        });
+    }
+    catch (error) {
+        const databaseError = error;
+        // Handle duplicate email
+        if (databaseError.code === "ER_DUP_ENTRY") {
+            return res.status(409).json({
+                status: "error",
+                message: "A customer with this email already exists."
+            });
+        }
+        console.error("Customer creation failed:", error);
+        return res.status(500).json({
+            status: "error",
+            message: "Unable to create customer."
+        });
+    }
 });
-// GET: Retrieve all customers
-exports.customerRouter.get("/", (_req, res) => {
-    return res.status(200).json({
-        status: "success",
-        results: customers_1.customers.length,
-        data: customers_1.customers
-    });
+// GET: Retrieve all customers from MySQL
+exports.customerRouter.get("/", async (_req, res) => {
+    try {
+        // Retrieve all customer records from MySQL
+        const [rows] = await db_1.pool.execute(`SELECT id, name, email, company
+       FROM customers
+       ORDER BY id ASC`);
+        // Return all customers
+        return res.status(200).json({
+            status: "success",
+            results: rows.length,
+            data: rows
+        });
+    }
+    catch (error) {
+        console.error("Failed to retrieve customers:", error);
+        return res.status(500).json({
+            status: "error",
+            message: "Unable to retrieve customers."
+        });
+    }
 });
-// GET: Retrieve one customer by ID
-exports.customerRouter.get("/:id", (req, res) => {
+// GET: Retrieve one customer by ID from MySQL
+exports.customerRouter.get("/:id", async (req, res) => {
     const customerId = Number(req.params.id);
+    // Validate customer ID
     if (!Number.isInteger(customerId) || customerId <= 0) {
         return res.status(400).json({
             status: "error",
             message: "Invalid customer ID."
         });
     }
-    const customer = customers_1.customers.find((customer) => customer.id === customerId);
-    if (!customer) {
-        return res.status(404).json({
-            status: "error",
-            message: "Customer not found."
+    try {
+        // Retrieve customer from MySQL
+        const [rows] = await db_1.pool.execute(`SELECT id, name, email, company
+       FROM customers
+       WHERE id = ?`, [customerId]);
+        // Check whether customer exists
+        if (rows.length === 0) {
+            return res.status(404).json({
+                status: "error",
+                message: "Customer not found."
+            });
+        }
+        // Return customer information
+        return res.status(200).json({
+            status: "success",
+            data: rows[0]
         });
     }
-    return res.status(200).json({
-        status: "success",
-        data: customer
-    });
+    catch (error) {
+        console.error("Failed to retrieve customer:", error);
+        return res.status(500).json({
+            status: "error",
+            message: "Unable to retrieve customer."
+        });
+    }
 });

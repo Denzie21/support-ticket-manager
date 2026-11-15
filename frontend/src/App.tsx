@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
 import { CustomerCard } from "./components/CustomerCard";
-import type { Customer, ApiUser } from "./types";
+import type { Customer } from "./types";
 import { CustomerDetails } from "./components/CustomerDetails";
 
 import "./App.css";
@@ -30,6 +30,11 @@ function App() {
     email: "",
     company: ""
   });
+
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [submitSuccess, setSubmitSuccess] = useState("");
+
   const [selectedCustomer, setSelectedCustomer] =
     useState<Customer | null>(null);
 
@@ -39,7 +44,8 @@ function App() {
   const [detailsError, setDetailsError] =
     useState("");
 
-  // Fetch customers from API
+
+  // Fetch customers from our Express backend
   useEffect(() => {
     async function fetchCustomers() {
       try {
@@ -47,24 +53,20 @@ function App() {
         setError("");
 
         const response = await fetch(
-          "https://jsonplaceholder.typicode.com/users"
+          "http://localhost:5000/api/customers"
         );
 
         if (!response.ok) {
-          throw new Error("Failed to retrieve customer data.");
+          throw new Error("Failed to retrieve customers from backend.");
         }
 
-        const data: ApiUser[] = await response.json();
+        const result: {
+          status: string;
+          results: number;
+          data: Customer[];
+        } = await response.json();
 
-        // Convert API data into our Customer structure
-        const customerData: Customer[] = data.map((user) => ({
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          company: user.company.name
-        }));
-
-        setCustomers(customerData);
+        setCustomers(result.data);
 
       } catch (err) {
         setError(
@@ -80,7 +82,9 @@ function App() {
     fetchCustomers();
   }, []);
 
-  // Retrieve individual customer details from API
+
+
+  // Retrieve individual customer details from our Express backend
   async function handleViewDetails(customerId: number) {
     try {
       setDetailsLoading(true);
@@ -88,23 +92,21 @@ function App() {
       setSelectedCustomer(null);
 
       const response = await fetch(
-        `https://jsonplaceholder.typicode.com/users/${customerId}`
+        `http://localhost:5000/api/customers/${customerId}`
       );
 
       if (!response.ok) {
-        throw new Error("Customer details could not be retrieved.");
+        throw new Error(
+          "Customer details could not be retrieved."
+        );
       }
 
-      const user: ApiUser = await response.json();
+      const result: {
+        status: string;
+        data: Customer;
+      } = await response.json();
 
-      const customer: Customer = {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        company: user.company.name
-      };
-
-      setSelectedCustomer(customer);
+      setSelectedCustomer(result.data);
 
     } catch (err) {
       setDetailsError(
@@ -116,33 +118,76 @@ function App() {
       setDetailsLoading(false);
     }
   }
-  // Add a new customer to React state
-  function handleAddCustomer(
+
+
+  // Add a new customer through our Express backend
+  async function handleAddCustomer(
     event: FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
 
-    const customerData: Customer = {
-      id: Date.now(),
-      name: newCustomer.name.trim(),
-      email: newCustomer.email.trim(),
-      company: newCustomer.company.trim()
-    };
+    setSubmitting(true);
+    setSubmitError("");
+    setSubmitSuccess("");
 
-    setCustomers((previousCustomers) => [
-      ...previousCustomers,
-      customerData
-    ]);
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/customers",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            name: newCustomer.name.trim(),
+            email: newCustomer.email.trim(),
+            company: newCustomer.company.trim()
+          })
+        }
+      );
 
-    setNewCustomer({
-      name: "",
-      email: "",
-      company: ""
-    });
+      const result: {
+        status: string;
+        message: string;
+        data: Customer;
+      } = await response.json();
 
-    setSearchTerm("");
-    setSelectedCompany("All Companies");
+      if (!response.ok) {
+        throw new Error(
+          result.message || "Failed to create customer."
+        );
+      }
+
+      // Add the customer returned by the backend
+      setCustomers((previousCustomers) => [
+        ...previousCustomers,
+        result.data
+      ]);
+
+      // Reset the form
+      setNewCustomer({
+        name: "",
+        email: "",
+        company: ""
+      });
+
+      // Reset search and company filters
+      setSearchTerm("");
+      setSelectedCompany("All Companies");
+
+      setSubmitSuccess("Customer created successfully!");
+
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error
+          ? err.message
+          : "An unexpected error occurred."
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
+
 
   // Generate company options from customer data
   const companies = [
@@ -229,10 +274,21 @@ function App() {
             required
           />
 
-          <button type="submit">
-            Add Customer
+          <button type="submit" disabled={submitting}>
+            {submitting ? "Adding..." : "Add Customer"}
           </button>
         </form>
+        {submitError && (
+  <p className="error-message">
+    {submitError}
+  </p>
+)}
+
+{submitSuccess && (
+  <p className="success-message">
+    {submitSuccess}
+  </p>
+)}
       </section>
 
       {/* SEARCH AND FILTER */}
@@ -290,23 +346,23 @@ function App() {
       </section>
 
       {detailsLoading && (
-  <p>Loading customer details...</p>
-)}
+        <p>Loading customer details...</p>
+      )}
 
-{detailsError && (
-  <p className="error-message">{detailsError}</p>
-)}
+      {detailsError && (
+        <p className="error-message">{detailsError}</p>
+      )}
 
-{selectedCustomer && (
-  <CustomerDetails customer={selectedCustomer} />
-)}
+      {selectedCustomer && (
+        <CustomerDetails customer={selectedCustomer} />
+      )}
 
       {!loading && !error && (
         <p className="result-count">
           Showing {filteredCustomers.length} of {customers.length} customers
         </p>
       )}
-      
+
 
     </main>
   );
