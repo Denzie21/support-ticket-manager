@@ -1,40 +1,111 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
+
 import { CustomerCard } from "./components/CustomerCard";
-import type { Customer } from "./types";
+import type { Customer, ApiUser } from "./types";
+
 import "./App.css";
 
-const customers: Customer[] = [
-  {
-    id: 1,
-    name: "Leanne Graham",
-    email: "Sincere@april.biz",
-    company: "Romaguera-Crona"
-  },
-  {
-    id: 2,
-    name: "Ervin Howell",
-    email: "Shanna@melissa.tv",
-    company: "Deckow-Crist"
-  },
-  {
-    id: 3,
-    name: "Clementine Bauch",
-    email: "Nathan@yesenia.net",
-    company: "Romaguera-Jacobson"
-  }
-];
-
 function App() {
-  // Store the user's search input
+  // Store customer records
+  const [customers, setCustomers] = useState<Customer[]>([]);
+
+  // API loading state
+  const [loading, setLoading] = useState(true);
+
+  // API error state
+  const [error, setError] = useState("");
+
+  // Search state
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Store the selected company filter
+  // Company filter state
   const [selectedCompany, setSelectedCompany] =
     useState("All Companies");
 
-  // Filter customers based on name or email
+  // New customer form state
+  const [newCustomer, setNewCustomer] = useState({
+    name: "",
+    email: "",
+    company: ""
+  });
 
+  // Fetch customers from API
+  useEffect(() => {
+    async function fetchCustomers() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await fetch(
+          "https://jsonplaceholder.typicode.com/users"
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to retrieve customer data.");
+        }
+
+        const data: ApiUser[] = await response.json();
+
+        // Convert API data into our Customer structure
+        const customerData: Customer[] = data.map((user) => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          company: user.company.name
+        }));
+
+        setCustomers(customerData);
+
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "An unexpected error occurred."
+        );
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchCustomers();
+  }, []);
+
+  // Add a new customer
+  function handleAddCustomer(
+    event: FormEvent<HTMLFormElement>
+  ) {
+    event.preventDefault();
+
+    const customerData: Customer = {
+      id: Date.now(),
+      name: newCustomer.name.trim(),
+      email: newCustomer.email.trim(),
+      company: newCustomer.company.trim()
+    };
+
+    setCustomers((previousCustomers) => [
+      ...previousCustomers,
+      customerData
+    ]);
+
+    setNewCustomer({
+      name: "",
+      email: "",
+      company: ""
+    });
+
+    setSearchTerm("");
+    setSelectedCompany("All Companies");
+  }
+
+  // Generate company options from customer data
+  const companies = [
+    ...new Set(customers.map((customer) => customer.company))
+  ];
+
+  // Search and filter customers
   const filteredCustomers = customers.filter((customer) => {
     const search = searchTerm.toLowerCase();
 
@@ -49,12 +120,12 @@ function App() {
     return matchesSearch && matchesCompany;
   });
 
-
-  // Clear the search field
+  // Clear filters
   function handleClearFilters() {
     setSearchTerm("");
     setSelectedCompany("All Companies");
   }
+
   return (
     <main className="app">
 
@@ -70,6 +141,57 @@ function App() {
         </p>
       </header>
 
+      {/* CREATE CUSTOMER FORM */}
+      <section className="form-section">
+        <h2>Add New Customer</h2>
+
+        <form onSubmit={handleAddCustomer}>
+          <input
+            type="text"
+            placeholder="Customer Name"
+            value={newCustomer.name}
+            onChange={(event) =>
+              setNewCustomer({
+                ...newCustomer,
+                name: event.target.value
+              })
+            }
+            required
+          />
+
+          <input
+            type="email"
+            placeholder="Email Address"
+            value={newCustomer.email}
+            onChange={(event) =>
+              setNewCustomer({
+                ...newCustomer,
+                email: event.target.value
+              })
+            }
+            required
+          />
+
+          <input
+            type="text"
+            placeholder="Company Name"
+            value={newCustomer.company}
+            onChange={(event) =>
+              setNewCustomer({
+                ...newCustomer,
+                company: event.target.value
+              })
+            }
+            required
+          />
+
+          <button type="submit">
+            Add Customer
+          </button>
+        </form>
+      </section>
+
+      {/* SEARCH AND FILTER */}
       <section className="search-section">
         <input
           type="text"
@@ -82,12 +204,17 @@ function App() {
 
         <select
           value={selectedCompany}
-          onChange={(event) => setSelectedCompany(event.target.value)}
+          onChange={(event) =>
+            setSelectedCompany(event.target.value)
+          }
         >
           <option value="All Companies">All Companies</option>
-          <option value="Romaguera-Crona">Romaguera-Crona</option>
-          <option value="Deckow-Crist">Deckow-Crist</option>
-          <option value="Romaguera-Jacobson">Romaguera-Jacobson</option>
+
+          {companies.map((company) => (
+            <option key={company} value={company}>
+              {company}
+            </option>
+          ))}
         </select>
 
         <button onClick={handleClearFilters}>
@@ -95,8 +222,14 @@ function App() {
         </button>
       </section>
 
+      {/* CUSTOMER DIRECTORY */}
       <section className="customer-grid">
-        {filteredCustomers.length > 0 ? (
+
+        {loading ? (
+          <p>Loading customers from API...</p>
+        ) : error ? (
+          <p className="error-message">{error}</p>
+        ) : filteredCustomers.length > 0 ? (
           filteredCustomers.map((customer) => (
             <CustomerCard
               key={customer.id}
@@ -106,11 +239,14 @@ function App() {
         ) : (
           <p>No customers found.</p>
         )}
+
       </section>
 
-      <p className="result-count">
-        Showing {filteredCustomers.length} of {customers.length} customers
-      </p>
+      {!loading && !error && (
+        <p className="result-count">
+          Showing {filteredCustomers.length} of {customers.length} customers
+        </p>
+      )}
 
     </main>
   );
