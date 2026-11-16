@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { customerRouter } from "./routes/customerRoutes";
+import { ticketRouter } from "./routes/ticketRoutes";
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.use("/api/customers", customerRouter);
+app.use("/api/tickets", ticketRouter);
 
 app.listen(PORT, () => {
   console.log(`Backend server running on http://localhost:${PORT}`);
