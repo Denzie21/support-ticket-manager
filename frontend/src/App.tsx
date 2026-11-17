@@ -1,30 +1,36 @@
+
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
 import { CustomerCard } from "./components/CustomerCard";
-import type { Customer } from "./types";
 import { CustomerDetails } from "./components/CustomerDetails";
+import { TicketCard } from "./components/TicketCard";
+import { CreateTicketForm } from "./components/CreateTicketForm";
+import { TicketDetails } from "./components/TicketDetails";
+
+import type {
+  Customer,
+  Ticket,
+  TicketStatus,
+  TicketPriority
+} from "./types";
 
 import "./App.css";
 
 function App() {
-  // Store customer records
+  // ==========================================
+  // CUSTOMER STATES
+  // ==========================================
+
   const [customers, setCustomers] = useState<Customer[]>([]);
 
-  // API loading state
   const [loading, setLoading] = useState(true);
-
-  // API error state
   const [error, setError] = useState("");
 
-  // Search state
   const [searchTerm, setSearchTerm] = useState("");
-
-  // Company filter state
   const [selectedCompany, setSelectedCompany] =
     useState("All Companies");
 
-  // New customer form state
   const [newCustomer, setNewCustomer] = useState({
     name: "",
     email: "",
@@ -38,14 +44,34 @@ function App() {
   const [selectedCustomer, setSelectedCustomer] =
     useState<Customer | null>(null);
 
-  const [detailsLoading, setDetailsLoading] =
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsError, setDetailsError] = useState("");
+
+  // ==========================================
+  // TICKET STATES
+  // ==========================================
+
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+
+  const [ticketsLoading, setTicketsLoading] = useState(true);
+  const [ticketsError, setTicketsError] = useState("");
+
+  const [selectedTicket, setSelectedTicket] =
+    useState<Ticket | null>(null);
+
+  const [ticketDetailsLoading, setTicketDetailsLoading] =
     useState(false);
 
-  const [detailsError, setDetailsError] =
+  const [ticketDetailsError, setTicketDetailsError] =
     useState("");
 
+  const [ticketActionError, setTicketActionError] = useState("");
+  const [ticketSuccess, setTicketSuccess] = useState("");
 
-  // Fetch customers from our Express backend
+  // ==========================================
+  // FETCH CUSTOMERS
+  // ==========================================
+
   useEffect(() => {
     async function fetchCustomers() {
       try {
@@ -57,7 +83,9 @@ function App() {
         );
 
         if (!response.ok) {
-          throw new Error("Failed to retrieve customers from backend.");
+          throw new Error(
+            "Failed to retrieve customers from backend."
+          );
         }
 
         const result: {
@@ -82,9 +110,52 @@ function App() {
     fetchCustomers();
   }, []);
 
+  // ==========================================
+  // FETCH SUPPORT TICKETS
+  // ==========================================
 
+  useEffect(() => {
+    async function fetchTickets() {
+      try {
+        setTicketsLoading(true);
+        setTicketsError("");
 
-  // Retrieve individual customer details from our Express backend
+        const response = await fetch(
+          "http://localhost:5000/api/tickets"
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            "Failed to retrieve support tickets from backend."
+          );
+        }
+
+        const result: {
+          status: string;
+          results: number;
+          data: Ticket[];
+        } = await response.json();
+
+        setTickets(result.data);
+
+      } catch (err) {
+        setTicketsError(
+          err instanceof Error
+            ? err.message
+            : "An unexpected error occurred."
+        );
+      } finally {
+        setTicketsLoading(false);
+      }
+    }
+
+    fetchTickets();
+  }, []);
+
+  // ==========================================
+  // VIEW CUSTOMER DETAILS
+  // ==========================================
+
   async function handleViewDetails(customerId: number) {
     try {
       setDetailsLoading(true);
@@ -119,8 +190,10 @@ function App() {
     }
   }
 
+  // ==========================================
+  // ADD CUSTOMER
+  // ==========================================
 
-  // Add a new customer through our Express backend
   async function handleAddCustomer(
     event: FormEvent<HTMLFormElement>
   ) {
@@ -158,20 +231,17 @@ function App() {
         );
       }
 
-      // Add the customer returned by the backend
       setCustomers((previousCustomers) => [
         ...previousCustomers,
         result.data
       ]);
 
-      // Reset the form
       setNewCustomer({
         name: "",
         email: "",
         company: ""
       });
 
-      // Reset search and company filters
       setSearchTerm("");
       setSelectedCompany("All Companies");
 
@@ -188,13 +258,211 @@ function App() {
     }
   }
 
+  // ==========================================
+  // CREATE SUPPORT TICKET
+  // ==========================================
 
-  // Generate company options from customer data
+  async function handleCreateTicket(ticketData: {
+    customer_id: number;
+    subject: string;
+    description: string;
+    priority: TicketPriority;
+  }): Promise<void> {
+    setTicketActionError("");
+    setTicketSuccess("");
+
+    const response = await fetch(
+      "http://localhost:5000/api/tickets",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(ticketData)
+      }
+    );
+
+    const result: {
+      status: string;
+      message: string;
+      data: Ticket;
+    } = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        result.message || "Failed to create support ticket."
+      );
+    }
+
+    setTickets((previousTickets) => [
+      result.data,
+      ...previousTickets
+    ]);
+
+    setTicketSuccess("Support ticket created successfully!");
+  }
+
+  // ==========================================
+  // VIEW TICKET DETAILS
+  // ==========================================
+
+  async function handleViewTicket(ticketId: number) {
+    try {
+      setTicketDetailsLoading(true);
+      setTicketDetailsError("");
+      setSelectedTicket(null);
+
+      const response = await fetch(
+        `http://localhost:5000/api/tickets/${ticketId}`
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          "Support ticket details could not be retrieved."
+        );
+      }
+
+      const result: {
+        status: string;
+        data: Ticket;
+      } = await response.json();
+
+      setSelectedTicket(result.data);
+
+    } catch (err) {
+      setTicketDetailsError(
+        err instanceof Error
+          ? err.message
+          : "An unexpected error occurred."
+      );
+    } finally {
+      setTicketDetailsLoading(false);
+    }
+  }
+
+  // ==========================================
+  // UPDATE TICKET STATUS OR PRIORITY
+  // ==========================================
+
+  async function handleUpdateTicket(
+    ticketId: number,
+    updates: {
+      status?: TicketStatus;
+      priority?: TicketPriority;
+    }
+  ): Promise<void> {
+    try {
+      setTicketActionError("");
+      setTicketSuccess("");
+
+      const response = await fetch(
+        `http://localhost:5000/api/tickets/${ticketId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(updates)
+        }
+      );
+
+      const result: {
+        status: string;
+        message: string;
+        data: Ticket;
+      } = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.message || "Failed to update support ticket."
+        );
+      }
+
+      // Update the ticket in the dashboard
+      setTickets((previousTickets) =>
+        previousTickets.map((ticket) =>
+          ticket.id === ticketId ? result.data : ticket
+        )
+      );
+
+      // Update the selected ticket details
+      setSelectedTicket(result.data);
+
+      setTicketSuccess("Support ticket updated successfully!");
+
+    } catch (err) {
+      setTicketActionError(
+        err instanceof Error
+          ? err.message
+          : "An unexpected error occurred."
+      );
+    }
+  }
+
+  // ==========================================
+  // DELETE SUPPORT TICKET
+  // ==========================================
+
+  async function handleDeleteTicket(
+    ticketId: number
+  ): Promise<void> {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this support ticket?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setTicketActionError("");
+      setTicketSuccess("");
+
+      const response = await fetch(
+        `http://localhost:5000/api/tickets/${ticketId}`,
+        {
+          method: "DELETE"
+        }
+      );
+
+      const result: {
+        status: string;
+        message: string;
+      } = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.message || "Failed to delete support ticket."
+        );
+      }
+
+      setTickets((previousTickets) =>
+        previousTickets.filter(
+          (ticket) => ticket.id !== ticketId
+        )
+      );
+
+      setSelectedTicket(null);
+
+      setTicketSuccess("Support ticket deleted successfully!");
+
+    } catch (err) {
+      setTicketActionError(
+        err instanceof Error
+          ? err.message
+          : "An unexpected error occurred."
+      );
+    }
+  }
+
+  // ==========================================
+  // CUSTOMER SEARCH AND FILTER
+  // ==========================================
+
   const companies = [
     ...new Set(customers.map((customer) => customer.company))
   ];
 
-  // Search and filter customers
   const filteredCustomers = customers.filter((customer) => {
     const search = searchTerm.toLowerCase();
 
@@ -209,15 +477,19 @@ function App() {
     return matchesSearch && matchesCompany;
   });
 
-  // Clear filters
   function handleClearFilters() {
     setSearchTerm("");
     setSelectedCompany("All Companies");
   }
 
+  // ==========================================
+  // APPLICATION UI
+  // ==========================================
+
   return (
     <main className="app">
 
+      {/* PAGE HEADER */}
       <header className="page-header">
         <p className="eyebrow">
           CUSTOMER SUPPORT TICKET MANAGER
@@ -226,7 +498,7 @@ function App() {
         <h1>Customer Directory</h1>
 
         <p>
-          Manage and review customer information.
+          Manage customers and support tickets.
         </p>
       </header>
 
@@ -278,20 +550,84 @@ function App() {
             {submitting ? "Adding..." : "Add Customer"}
           </button>
         </form>
-        {submitError && (
-  <p className="error-message">
-    {submitError}
-  </p>
-)}
 
-{submitSuccess && (
-  <p className="success-message">
-    {submitSuccess}
-  </p>
-)}
+        {submitError && (
+          <p className="error-message">
+            {submitError}
+          </p>
+        )}
+
+        {submitSuccess && (
+          <p className="success-message">
+            {submitSuccess}
+          </p>
+        )}
       </section>
 
-      {/* SEARCH AND FILTER */}
+      {/* CREATE SUPPORT TICKET FORM */}
+      <CreateTicketForm
+        customers={customers}
+        onCreateTicket={handleCreateTicket}
+      />
+
+      {/* TICKET SUCCESS AND ERROR MESSAGES */}
+      {ticketSuccess && (
+        <p className="success-message">
+          {ticketSuccess}
+        </p>
+      )}
+
+      {ticketActionError && (
+        <p className="error-message">
+          {ticketActionError}
+        </p>
+      )}
+
+      {/* SUPPORT TICKET DASHBOARD */}
+      <section className="ticket-section">
+        <h2>Support Tickets</h2>
+
+        {ticketsLoading ? (
+          <p>Loading support tickets...</p>
+        ) : ticketsError ? (
+          <p className="error-message">
+            {ticketsError}
+          </p>
+        ) : tickets.length > 0 ? (
+          <div className="ticket-grid">
+            {tickets.map((ticket) => (
+              <TicketCard
+                key={ticket.id}
+                ticket={ticket}
+                onViewDetails={handleViewTicket}
+              />
+            ))}
+          </div>
+        ) : (
+          <p>No support tickets found.</p>
+        )}
+      </section>
+
+      {/* SELECTED TICKET DETAILS */}
+      {ticketDetailsLoading && (
+        <p>Loading ticket details...</p>
+      )}
+
+      {ticketDetailsError && (
+        <p className="error-message">
+          {ticketDetailsError}
+        </p>
+      )}
+
+      {selectedTicket && (
+        <TicketDetails
+          ticket={selectedTicket}
+          onUpdateTicket={handleUpdateTicket}
+          onDeleteTicket={handleDeleteTicket}
+        />
+      )}
+
+      {/* CUSTOMER SEARCH AND FILTER */}
       <section className="search-section">
         <input
           type="text"
@@ -308,7 +644,9 @@ function App() {
             setSelectedCompany(event.target.value)
           }
         >
-          <option value="All Companies">All Companies</option>
+          <option value="All Companies">
+            All Companies
+          </option>
 
           {companies.map((company) => (
             <option key={company} value={company}>
@@ -317,52 +655,56 @@ function App() {
           ))}
         </select>
 
-        <button onClick={handleClearFilters}>
+        <button
+          type="button"
+          onClick={handleClearFilters}
+        >
           Clear Filters
         </button>
       </section>
 
       {/* CUSTOMER DIRECTORY */}
       <section className="customer-grid">
-
         {loading ? (
           <p>Loading customers from API...</p>
         ) : error ? (
-          <p className="error-message">{error}</p>
+          <p className="error-message">
+            {error}
+          </p>
         ) : filteredCustomers.length > 0 ? (
           filteredCustomers.map((customer) => (
-
             <CustomerCard
               key={customer.id}
               customer={customer}
               onViewDetails={handleViewDetails}
             />
-
           ))
         ) : (
           <p>No customers found.</p>
         )}
-
       </section>
 
+      {/* CUSTOMER DETAILS */}
       {detailsLoading && (
         <p>Loading customer details...</p>
       )}
 
       {detailsError && (
-        <p className="error-message">{detailsError}</p>
+        <p className="error-message">
+          {detailsError}
+        </p>
       )}
 
       {selectedCustomer && (
         <CustomerDetails customer={selectedCustomer} />
       )}
 
+      {/* CUSTOMER RESULT COUNT */}
       {!loading && !error && (
         <p className="result-count">
           Showing {filteredCustomers.length} of {customers.length} customers
         </p>
       )}
-
 
     </main>
   );
