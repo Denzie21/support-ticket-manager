@@ -161,3 +161,63 @@ customerRouter.get("/:id", async (req, res) => {
     });
   }
 });
+
+// DELETE: Remove a customer and all associated support tickets
+customerRouter.delete("/:id", async (req, res) => {
+  const customerId = Number(req.params.id);
+
+  // Validate customer ID
+  if (!Number.isInteger(customerId) || customerId <= 0) {
+    return res.status(400).json({
+      status: "error",
+      message: "A valid customer ID is required."
+    });
+  }
+
+  try {
+    // Check whether the customer exists
+    const [existingCustomers] = await pool.execute<CustomerRow[]>(
+      `SELECT id, name, email, company
+       FROM customers
+       WHERE id = ?`,
+      [customerId]
+    );
+
+    if (existingCustomers.length === 0) {
+      return res.status(404).json({
+        status: "error",
+        message: "Customer not found."
+      });
+    }
+
+    // Delete customer; MySQL CASCADE deletes associated tickets
+    const [result] = await pool.execute<ResultSetHeader>(
+      `DELETE FROM customers WHERE id = ?`,
+      [customerId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        status: "error",
+        message: "Customer not found."
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      message: "Customer and associated support tickets deleted successfully.",
+      data: {
+        id: customerId,
+        name: existingCustomers[0].name
+      }
+    });
+
+  } catch (error) {
+    console.error("Customer deletion failed:", error);
+
+    return res.status(500).json({
+      status: "error",
+      message: "Unable to delete customer."
+    });
+  }
+});

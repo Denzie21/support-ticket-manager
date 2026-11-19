@@ -1,14 +1,20 @@
-
 import type { Customer } from "../types";
 
 interface CustomerCardProps {
   customer: Customer;
   onViewDetails: (customerId: number) => void;
+  onDeleteCustomer: (
+    customerId: number,
+    customerName: string
+  ) => void;
+  isDeleting: boolean;
 }
 
 export function CustomerCard({
   customer,
-  onViewDetails
+  onViewDetails,
+  onDeleteCustomer,
+  isDeleting
 }: CustomerCardProps) {
   return (
     <article className="customer-card">
@@ -26,9 +32,20 @@ export function CustomerCard({
         </p>
 
         <button
+          type="button"
           onClick={() => onViewDetails(customer.id)}
         >
           View Details
+        </button>
+
+        <button
+          type="button"
+          disabled={isDeleting}
+          onClick={() =>
+            onDeleteCustomer(customer.id, customer.name)
+          }
+        >
+          {isDeleting ? "Deleting..." : "Delete Customer"}
         </button>
       </div>
     </article>

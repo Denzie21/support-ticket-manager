@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import type { Customer, TicketPriority } from "../types";
 
@@ -25,6 +24,16 @@ export function CreateTicketForm({
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // If the selected customer is deleted, clear the now-invalid selection.
+  useEffect(() => {
+    if (
+      customerId &&
+      !customers.some((customer) => customer.id === Number(customerId))
+    ) {
+      setCustomerId("");
+    }
+  }, [customers, customerId]);
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>
@@ -71,6 +80,7 @@ export function CreateTicketForm({
           value={customerId}
           onChange={(event) => setCustomerId(event.target.value)}
           required
+          disabled={customers.length === 0 || submitting}
         >
           <option value="">Select Customer</option>
 
@@ -81,6 +91,12 @@ export function CreateTicketForm({
           ))}
         </select>
 
+        {customers.length === 0 && (
+          <p className="error-message">
+            No customers available. Add a customer before creating a ticket.
+          </p>
+        )}
+
         <input
           type="text"
           placeholder="Ticket Subject"
@@ -88,6 +104,7 @@ export function CreateTicketForm({
           onChange={(event) => setSubject(event.target.value)}
           maxLength={180}
           required
+          disabled={customers.length === 0 || submitting}
         />
 
         <textarea
@@ -95,6 +112,7 @@ export function CreateTicketForm({
           value={description}
           onChange={(event) => setDescription(event.target.value)}
           required
+          disabled={customers.length === 0 || submitting}
         />
 
         <select
@@ -102,6 +120,7 @@ export function CreateTicketForm({
           onChange={(event) =>
             setPriority(event.target.value as TicketPriority)
           }
+          disabled={customers.length === 0 || submitting}
         >
           <option value="low">Low</option>
           <option value="medium">Medium</option>
@@ -109,7 +128,10 @@ export function CreateTicketForm({
           <option value="urgent">Urgent</option>
         </select>
 
-        <button type="submit" disabled={submitting}>
+        <button
+          type="submit"
+          disabled={submitting || customers.length === 0}
+        >
           {submitting ? "Creating..." : "Create Ticket"}
         </button>
       </form>

@@ -477,3 +477,347 @@
     text-align: left;
   }
 }
+
+/* ==========================================
+   DASHBOARD ANALYTICS
+========================================== */
+
+.analytics-section {
+  margin: 32px 0;
+}
+
+.analytics-header {
+  margin-bottom: 20px;
+}
+
+.analytics-header h2 {
+  margin: 4px 0 8px;
+}
+
+.analytics-header p {
+  color: #64748b;
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.analytics-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 22px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.analytics-card-label {
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.analytics-card-value {
+  color: #0f172a;
+  font-size: 32px;
+  line-height: 1.2;
+}
+
+.analytics-card-description {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.analytics-breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.analytics-panel {
+  padding: 22px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.analytics-panel h3 {
+  margin: 0 0 8px;
+  color: #0f172a;
+}
+
+.analytics-panel-description {
+  margin-bottom: 24px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.analytics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.analytics-list-item {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.analytics-list-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #334155;
+  font-size: 14px;
+}
+
+.analytics-list-heading strong {
+  color: #0f172a;
+}
+
+.analytics-progress-track {
+  width: 100%;
+  height: 9px;
+  overflow: hidden;
+  background: #e2e8f0;
+  border-radius: 20px;
+}
+
+.analytics-progress-fill {
+  height: 100%;
+  border-radius: 20px;
+  transition: width 0.3s ease;
+}
+
+.status-open {
+  background: #f59e0b;
+}
+
+.status-in-progress {
+  background: #3b82f6;
+}
+
+.status-resolved {
+  background: #10b981;
+}
+
+.status-closed {
+  background: #64748b;
+}
+
+.priority-low {
+  background: #10b981;
+}
+
+.priority-medium {
+  background: #3b82f6;
+}
+
+.priority-high {
+  background: #f59e0b;
+}
+
+.priority-urgent {
+  background: #ef4444;
+}
+
+@media (max-width: 900px) {
+  .analytics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analytics-breakdown-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-card,
+  .analytics-panel {
+    padding: 18px;
+  }
+}
+/* ==========================================
+   PHASE 2 - MONTHLY TICKET TRENDS
+========================================== */
+
+.monthly-trends-panel {
+  margin-bottom: 20px;
+}
+
+.monthly-chart {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 18px;
+  min-height: 210px;
+  padding-top: 12px;
+}
+
+.monthly-chart-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.monthly-chart-value {
+  color: #334155;
+  font-size: 14px;
+}
+
+.monthly-chart-bar-area {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 145px;
+  overflow: hidden;
+  background: #f1f5f9;
+  border-radius: 8px 8px 0 0;
+}
+
+.monthly-chart-bar {
+  width: min(48px, 75%);
+  background: #3b82f6;
+  border-radius: 7px 7px 0 0;
+  transition: height 0.3s ease;
+}
+
+.monthly-chart-label {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ==========================================
+   PHASE 2 - ATTENTION TICKET PANEL
+========================================== */
+
+.attention-panel {
+  margin-top: 20px;
+}
+
+.attention-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.attention-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  color: #ffffff;
+  background: #ef4444;
+  border-radius: 50px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.attention-ticket-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.attention-ticket {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 15px 0;
+  border-top: 1px solid #e2e8f0;
+}
+
+.attention-ticket-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.attention-ticket-info strong {
+  color: #0f172a;
+  overflow-wrap: anywhere;
+}
+
+.attention-ticket-info span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.attention-ticket-labels {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.attention-priority,
+.attention-ticket-status {
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.attention-priority.urgent {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.attention-priority.high {
+  color: #92400e;
+  background: #fef3c7;
+}
+
+.attention-ticket-status {
+  color: #334155;
+  background: #f1f5f9;
+}
+
+.analytics-empty-message {
+  padding: 18px 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* ==========================================
+   PHASE 2 - RESPONSIVE ADJUSTMENTS
+========================================== */
+
+@media (max-width: 600px) {
+  .monthly-chart {
+    gap: 8px;
+  }
+
+  .monthly-chart-bar-area {
+    height: 115px;
+  }
+
+  .attention-ticket {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .attention-ticket-labels {
+    justify-content: flex-start;
+  }
+}

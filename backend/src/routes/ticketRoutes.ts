@@ -349,6 +349,7 @@ ticketRouter.patch("/:id", async (req, res) => {
 
 // DELETE: Remove a support ticket by ID
 ticketRouter.delete("/:id", async (req, res) => {
+  console.log("DELETE request received:", req.params.id);
   const ticketId = Number(req.params.id);
 
   // 1. Validate ticket ID
@@ -378,6 +379,7 @@ ticketRouter.delete("/:id", async (req, res) => {
       "DELETE FROM tickets WHERE id = ?",
       [ticketId]
     );
+    console.log("Ticket successfully deleted from MySQL:", ticketId);
 
     // 4. Return successful response
     return res.status(200).json({

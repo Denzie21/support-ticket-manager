@@ -1,4 +1,3 @@
-
 export interface Customer {
   id: number;
   name: string;
@@ -6,7 +5,7 @@ export interface Customer {
   company: string;
 }
 
-// Structure returned by JSONPlaceholder
+// Structure returned by JSONPlaceholder (kept for compatibility if used elsewhere).
 export interface ApiUser {
   id: number;
   name: string;
@@ -38,4 +37,3 @@ export interface Ticket {
   created_at: string;
   updated_at: string;
 }
-

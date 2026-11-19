@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
@@ -7,6 +6,7 @@ import { CustomerDetails } from "./components/CustomerDetails";
 import { TicketCard } from "./components/TicketCard";
 import { CreateTicketForm } from "./components/CreateTicketForm";
 import { TicketDetails } from "./components/TicketDetails";
+import { DashboardAnalytics } from "./components/DashboardAnalytics";
 
 import type {
   Customer,
@@ -23,13 +23,14 @@ function App() {
   // ==========================================
 
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customerActionError, setCustomerActionError] = useState("");
+  const [customerActionSuccess, setCustomerActionSuccess] = useState("");
+  const [deletingCustomerId, setDeletingCustomerId] = useState<number | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCompany, setSelectedCompany] =
-    useState("All Companies");
+  const [selectedCompany, setSelectedCompany] = useState("All Companies");
 
   const [newCustomer, setNewCustomer] = useState({
     name: "",
@@ -52,18 +53,14 @@ function App() {
   // ==========================================
 
   const [tickets, setTickets] = useState<Ticket[]>([]);
-
   const [ticketsLoading, setTicketsLoading] = useState(true);
   const [ticketsError, setTicketsError] = useState("");
 
   const [selectedTicket, setSelectedTicket] =
     useState<Ticket | null>(null);
 
-  const [ticketDetailsLoading, setTicketDetailsLoading] =
-    useState(false);
-
-  const [ticketDetailsError, setTicketDetailsError] =
-    useState("");
+  const [ticketDetailsLoading, setTicketDetailsLoading] = useState(false);
+  const [ticketDetailsError, setTicketDetailsError] = useState("");
 
   const [ticketActionError, setTicketActionError] = useState("");
   const [ticketSuccess, setTicketSuccess] = useState("");
@@ -83,9 +80,7 @@ function App() {
         );
 
         if (!response.ok) {
-          throw new Error(
-            "Failed to retrieve customers from backend."
-          );
+          throw new Error("Failed to retrieve customers from backend.");
         }
 
         const result: {
@@ -95,7 +90,6 @@ function App() {
         } = await response.json();
 
         setCustomers(result.data);
-
       } catch (err) {
         setError(
           err instanceof Error
@@ -121,13 +115,18 @@ function App() {
         setTicketsError("");
 
         const response = await fetch(
-          "http://localhost:5000/api/tickets"
+          "http://localhost:5000/api/tickets",
+          {
+            method: "GET",
+            cache: "no-store",
+            headers: {
+              "Cache-Control": "no-cache"
+            }
+          }
         );
 
         if (!response.ok) {
-          throw new Error(
-            "Failed to retrieve support tickets from backend."
-          );
+          throw new Error("Failed to retrieve support tickets from backend.");
         }
 
         const result: {
@@ -137,7 +136,6 @@ function App() {
         } = await response.json();
 
         setTickets(result.data);
-
       } catch (err) {
         setTicketsError(
           err instanceof Error
@@ -167,9 +165,7 @@ function App() {
       );
 
       if (!response.ok) {
-        throw new Error(
-          "Customer details could not be retrieved."
-        );
+        throw new Error("Customer details could not be retrieved.");
       }
 
       const result: {
@@ -178,7 +174,6 @@ function App() {
       } = await response.json();
 
       setSelectedCustomer(result.data);
-
     } catch (err) {
       setDetailsError(
         err instanceof Error
@@ -194,9 +189,7 @@ function App() {
   // ADD CUSTOMER
   // ==========================================
 
-  async function handleAddCustomer(
-    event: FormEvent<HTMLFormElement>
-  ) {
+  async function handleAddCustomer(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     setSubmitting(true);
@@ -226,9 +219,7 @@ function App() {
       } = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          result.message || "Failed to create customer."
-        );
+        throw new Error(result.message || "Failed to create customer.");
       }
 
       setCustomers((previousCustomers) => [
@@ -244,9 +235,7 @@ function App() {
 
       setSearchTerm("");
       setSelectedCompany("All Companies");
-
       setSubmitSuccess("Customer created successfully!");
-
     } catch (err) {
       setSubmitError(
         err instanceof Error
@@ -255,6 +244,79 @@ function App() {
       );
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  // ==========================================
+  // DELETE CUSTOMER AND ASSOCIATED TICKETS
+  // ==========================================
+
+  async function handleDeleteCustomer(
+    customerId: number,
+    customerName: string
+  ): Promise<void> {
+    const confirmed = window.confirm(
+      `Delete ${customerName} and all of their support tickets? This action cannot be undone.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeletingCustomerId(customerId);
+      setCustomerActionError("");
+      setCustomerActionSuccess("");
+
+      const response = await fetch(
+        `http://localhost:5000/api/customers/${customerId}`,
+        {
+          method: "DELETE"
+        }
+      );
+
+      const result: {
+        status: string;
+        message: string;
+      } = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to delete customer.");
+      }
+
+      // Remove the customer and their tickets from the current dashboard.
+      setCustomers((previousCustomers) =>
+        previousCustomers.filter(
+          (customer) => customer.id !== customerId
+        )
+      );
+
+      setTickets((previousTickets) =>
+        previousTickets.filter(
+          (ticket) => ticket.customer_id !== customerId
+        )
+      );
+
+      // Close details panels only when they belong to this customer.
+      setSelectedCustomer((previousCustomer) =>
+        previousCustomer?.id === customerId ? null : previousCustomer
+      );
+
+      setSelectedTicket((previousTicket) =>
+        previousTicket?.customer_id === customerId ? null : previousTicket
+      );
+
+      setCustomerActionSuccess(
+        `${customerName} and their associated support tickets were deleted successfully.`
+      );
+    } catch (err) {
+      setCustomerActionError(
+        err instanceof Error
+          ? err.message
+          : "An unexpected error occurred."
+      );
+    } finally {
+      setDeletingCustomerId(null);
     }
   }
 
@@ -317,9 +379,7 @@ function App() {
       );
 
       if (!response.ok) {
-        throw new Error(
-          "Support ticket details could not be retrieved."
-        );
+        throw new Error("Support ticket details could not be retrieved.");
       }
 
       const result: {
@@ -328,7 +388,6 @@ function App() {
       } = await response.json();
 
       setSelectedTicket(result.data);
-
     } catch (err) {
       setTicketDetailsError(
         err instanceof Error
@@ -378,18 +437,14 @@ function App() {
         );
       }
 
-      // Update the ticket in the dashboard
       setTickets((previousTickets) =>
         previousTickets.map((ticket) =>
           ticket.id === ticketId ? result.data : ticket
         )
       );
 
-      // Update the selected ticket details
       setSelectedTicket(result.data);
-
       setTicketSuccess("Support ticket updated successfully!");
-
     } catch (err) {
       setTicketActionError(
         err instanceof Error
@@ -403,9 +458,7 @@ function App() {
   // DELETE SUPPORT TICKET
   // ==========================================
 
-  async function handleDeleteTicket(
-    ticketId: number
-  ): Promise<void> {
+  async function handleDeleteTicket(ticketId: number): Promise<void> {
     const confirmed = window.confirm(
       "Are you sure you want to delete this support ticket?"
     );
@@ -442,10 +495,11 @@ function App() {
         )
       );
 
-      setSelectedTicket(null);
+      setSelectedTicket((previousTicket) =>
+        previousTicket?.id === ticketId ? null : previousTicket
+      );
 
       setTicketSuccess("Support ticket deleted successfully!");
-
     } catch (err) {
       setTicketActionError(
         err instanceof Error
@@ -488,7 +542,6 @@ function App() {
 
   return (
     <main className="app">
-
       {/* PAGE HEADER */}
       <header className="page-header">
         <p className="eyebrow">
@@ -501,6 +554,12 @@ function App() {
           Manage customers and support tickets.
         </p>
       </header>
+      
+      {/* DASHBOARD ANALYTICS */}
+      <DashboardAnalytics
+        customers={customers}
+        tickets={tickets}
+      />
 
       {/* CREATE CUSTOMER FORM */}
       <section className="form-section">
@@ -663,6 +722,19 @@ function App() {
         </button>
       </section>
 
+      {/* CUSTOMER DELETE SUCCESS AND ERROR MESSAGES */}
+      {customerActionSuccess && (
+        <p className="success-message">
+          {customerActionSuccess}
+        </p>
+      )}
+
+      {customerActionError && (
+        <p className="error-message">
+          {customerActionError}
+        </p>
+      )}
+
       {/* CUSTOMER DIRECTORY */}
       <section className="customer-grid">
         {loading ? (
@@ -677,6 +749,8 @@ function App() {
               key={customer.id}
               customer={customer}
               onViewDetails={handleViewDetails}
+              onDeleteCustomer={handleDeleteCustomer}
+              isDeleting={deletingCustomerId === customer.id}
             />
           ))
         ) : (
@@ -705,7 +779,6 @@ function App() {
           Showing {filteredCustomers.length} of {customers.length} customers
         </p>
       )}
-
     </main>
   );
 }
