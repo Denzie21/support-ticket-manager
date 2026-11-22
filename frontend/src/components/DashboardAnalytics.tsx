@@ -260,25 +260,28 @@ export function DashboardAnalytics({
           Tickets created during the last six months.
         </p>
 
-        <div className="monthly-chart">
-          {monthlyTickets.map((month) => {
-            const barHeight =
-              (month.count / highestMonthlyCount) * 100;
 
-            return (
-              <div className="monthly-chart-column" key={month.key}>
-                <strong className="monthly-chart-value">
+
+        {monthlyTickets.some((month) => month.count > 0) ? (
+          <div className="monthly-chart">
+            {monthlyTickets.map((month) => (
+              <div className="monthly-chart-column" key={month.label}>
+                <span className="monthly-chart-value">
                   {month.count}
-                </strong>
+                </span>
 
                 <div className="monthly-chart-bar-area">
                   <div
                     className="monthly-chart-bar"
                     style={{
-                      height: `${barHeight}%`,
-                      minHeight: month.count > 0 ? "6px" : "0"
+                      height: `${month.count === 0
+                          ? 0
+                          : Math.max(
+                            (month.count / highestMonthlyCount) * 100,
+                            5
+                          )
+                        }%`,
                     }}
-                    title={`${month.count} tickets created`}
                   />
                 </div>
 
@@ -286,9 +289,19 @@ export function DashboardAnalytics({
                   {month.label}
                 </span>
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="analytics-empty-message">
+            <strong>No ticket activity yet</strong>
+            <p>
+              Monthly ticket trends will appear here once customers
+              start submitting support tickets.
+            </p>
+          </div>
+        )}
+
+
       </article>
 
       {/* ======================================
@@ -374,7 +387,10 @@ export function DashboardAnalytics({
             </p>
           </div>
 
-          <span className="attention-count">
+          <span
+            className={`attention-count ${attentionTickets.length === 0 ? "attention-count-empty" : ""
+              }`}
+          >
             {attentionTickets.length}
           </span>
         </div>

@@ -23,7 +23,9 @@ export function TicketCard({
       <p>{ticket.description}</p>
 
       <div className="ticket-card-meta">
-        <span>Priority: {ticket.priority}</span>
+        <span className={`ticket-priority priority-${ticket.priority}`}>
+          Priority: {ticket.priority}
+        </span>
         <span>Customer ID: {ticket.customer_id}</span>
       </div>
 

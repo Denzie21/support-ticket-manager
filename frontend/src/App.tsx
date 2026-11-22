@@ -53,6 +53,20 @@ function App() {
   // ==========================================
 
   const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [ticketSearchTerm, setTicketSearchTerm] = useState("");
+
+  const [selectedTicketStatus, setSelectedTicketStatus] =
+    useState<TicketStatus | "all">("all");
+
+  const [selectedTicketPriority, setSelectedTicketPriority] =
+    useState<TicketPriority | "all">("all");
+
+  const [selectedTicketCustomer, setSelectedTicketCustomer] =
+    useState<number | "all">("all");
+
+  const [ticketSortOrder, setTicketSortOrder] =
+    useState("newest");
+
   const [ticketsLoading, setTicketsLoading] = useState(true);
   const [ticketsError, setTicketsError] = useState("");
 
@@ -258,6 +272,7 @@ function App() {
     const confirmed = window.confirm(
       `Delete ${customerName} and all of their support tickets? This action cannot be undone.`
     );
+
 
     if (!confirmed) {
       return;
@@ -536,6 +551,90 @@ function App() {
     setSelectedCompany("All Companies");
   }
 
+
+  // ==========================================
+  // TICKET SEARCH
+  // ==========================================
+
+  const normalizedTicketSearch = ticketSearchTerm
+    .trim()
+    .toLowerCase();
+
+  console.log("CUSTOMER FILTER DEBUG:", {
+    selectedCustomer: selectedTicketCustomer,
+    selectedCustomerType: typeof selectedTicketCustomer,
+    tickets: tickets.map((ticket) => ({
+      ticketId: ticket.id,
+      customerId: ticket.customer_id,
+      customerIdType: typeof ticket.customer_id,
+    })),
+  });
+
+  const filteredTickets = tickets.filter((ticket) => {
+    const matchesSearch = [
+      ticket.id.toString(),
+      ticket.subject,
+      ticket.description,
+    ].some((value) =>
+      value.toLowerCase().includes(normalizedTicketSearch)
+    );
+
+    const matchesStatus =
+      selectedTicketStatus === "all" ||
+      ticket.status === selectedTicketStatus;
+
+    const matchesPriority =
+      selectedTicketPriority === "all" ||
+      ticket.priority === selectedTicketPriority;
+
+    const matchesCustomer =
+      selectedTicketCustomer === "all" ||
+      ticket.customer_id === selectedTicketCustomer;
+
+    return matchesSearch && matchesStatus && matchesPriority && matchesCustomer;
+  });
+
+  const sortedTickets = [...filteredTickets].sort((a, b) => {
+    switch (ticketSortOrder) {
+      case "oldest":
+        return (
+          new Date(a.created_at).getTime() -
+          new Date(b.created_at).getTime()
+        );
+
+      case "priority": {
+        const priorityOrder = {
+          urgent: 4,
+          high: 3,
+          medium: 2,
+          low: 1,
+        };
+
+        return priorityOrder[b.priority] - priorityOrder[a.priority];
+      }
+
+      case "status": {
+        const statusOrder = {
+          open: 1,
+          in_progress: 2,
+          resolved: 3,
+          closed: 4,
+        };
+
+        return statusOrder[a.status] - statusOrder[b.status];
+      }
+
+      case "newest":
+      default:
+        return (
+          new Date(b.created_at).getTime() -
+          new Date(a.created_at).getTime()
+        );
+    }
+  });
+
+
+
   // ==========================================
   // APPLICATION UI
   // ==========================================
@@ -554,7 +653,7 @@ function App() {
           Manage customers and support tickets.
         </p>
       </header>
-      
+
       {/* DASHBOARD ANALYTICS */}
       <DashboardAnalytics
         customers={customers}
@@ -646,15 +745,84 @@ function App() {
       <section className="ticket-section">
         <h2>Support Tickets</h2>
 
+        <div className="ticket-search">
+          <input
+            type="search"
+            placeholder="Search by ticket ID, subject, or description..."
+            value={ticketSearchTerm}
+            onChange={(event) =>
+              setTicketSearchTerm(event.target.value)
+            }
+          />
+
+          <select
+            value={selectedTicketStatus}
+            onChange={(event) =>
+              setSelectedTicketStatus(
+                event.target.value as TicketStatus | "all"
+              )
+            }
+          >
+            <option value="all">All Statuses</option>
+            <option value="open">Open</option>
+            <option value="in_progress">In Progress</option>
+            <option value="resolved">Resolved</option>
+            <option value="closed">Closed</option>
+          </select>
+
+          <select
+            value={selectedTicketPriority}
+            onChange={(event) =>
+              setSelectedTicketPriority(
+                event.target.value as TicketPriority | "all"
+              )
+            }
+          >
+            <option value="all">All Priorities</option>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+            <option value="urgent">Urgent</option>
+          </select>
+
+          <select
+            value={selectedTicketCustomer}
+            onChange={(event) => {
+              const value = event.target.value;
+
+              setSelectedTicketCustomer(
+                value === "all" ? "all" : Number(value)
+              );
+            }}
+          >
+            <option value="all">All Customers</option>
+            {customers.map((customer) => (
+              <option key={customer.id} value={customer.id}>
+                {customer.name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={ticketSortOrder}
+            onChange={(event) => setTicketSortOrder(event.target.value)}
+          >
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="priority">Highest Priority</option>
+            <option value="status">Sort by Status</option>
+          </select>
+        </div>
+
         {ticketsLoading ? (
           <p>Loading support tickets...</p>
         ) : ticketsError ? (
           <p className="error-message">
             {ticketsError}
           </p>
-        ) : tickets.length > 0 ? (
+        ) : filteredTickets.length > 0 ? (
           <div className="ticket-grid">
-            {tickets.map((ticket) => (
+            {sortedTickets.map((ticket) => (
               <TicketCard
                 key={ticket.id}
                 ticket={ticket}
@@ -662,8 +830,10 @@ function App() {
               />
             ))}
           </div>
+        ) : tickets.length > 0 ? (
+          <p>No tickets match your current search and filters.</p>
         ) : (
-          <p>No support tickets found.</p>
+          <p>No support tickets found. Create your first ticket to get started.</p>
         )}
       </section>
 
